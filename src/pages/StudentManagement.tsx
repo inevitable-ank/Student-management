@@ -98,8 +98,8 @@ export const StudentManagement: React.FC = () => {
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-800 min-h-screen">
       {/* Header with Dark Mode Toggle */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-gray-100 drop-shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-6 gap-4">
+      <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 drop-shadow-lg text-center sm:text-left">
           🌟 Student Management 🌟
         </h1>
         <button
