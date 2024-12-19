@@ -14,6 +14,7 @@ export const StudentManagement: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [loading, setLoading] = useState<boolean>(false);
   const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [totalStudents, setTotalStudents] = useState<number>(0);
 
   const pageSize = 10;
 
@@ -30,8 +31,9 @@ export const StudentManagement: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const data = await getStudents(pageSize, currentPage);
+      const { data, total } = await getStudents(pageSize, currentPage); // Get data and total count
       setStudents(data);
+      setTotalStudents(total); // Update total count
       setLoading(false);
     };
 
@@ -74,7 +76,7 @@ export const StudentManagement: React.FC = () => {
       return 0;
     });
 
-  const totalPages = Math.ceil(students.length / pageSize);
+  const totalPages = Math.ceil(totalStudents / pageSize);
 
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-800 min-h-screen">
