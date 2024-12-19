@@ -4,17 +4,19 @@ import { StudentTable } from "../components/StudentTable";
 import { StudentCard } from "../components/StudentCard";
 import { Pagination } from "../components/Pagination";
 import { Student } from "../types/types";
+import InfiniteScroll from "react-infinite-scroll-component";
 
 export const StudentManagement: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(""); 
   const [sortField, setSortField] = useState<keyof Student>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [loading, setLoading] = useState<boolean>(false);
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [totalStudents, setTotalStudents] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true); // Tracks if more data is available
 
   const pageSize = 10;
 
@@ -27,18 +29,33 @@ export const StudentManagement: React.FC = () => {
     }
   }, [darkMode]);
 
-  // Fetch students data when the currentPage changes
+  // Fetch students data with pagination
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { data, total } = await getStudents(pageSize, currentPage); // Get data and total count
-      setStudents(data);
-      setTotalStudents(total); // Update total count
+      const { data, total } = await getStudents(pageSize, currentPage);
+      if (currentPage === 1) {
+        setStudents(data); // Overwrite on first page
+      } else {
+        setStudents((prev) => [...prev, ...data]); // Append on subsequent pages
+      }
+      setTotalStudents(total); // Update total number of students
+      if (students.length + data.length >= total) {
+        setHasMore(false); // No more data available
+      }
       setLoading(false);
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
+
+  // Infinite scroll load more handler
+  const fetchMoreData = () => {
+    if (hasMore) {
+      setCurrentPage((prevPage) => prevPage + 1); // Increment page number to load next set of data
+    }
+  };
 
   // Update view mode based on screen size
   useEffect(() => {
@@ -82,14 +99,15 @@ export const StudentManagement: React.FC = () => {
     <div className="p-6 bg-gray-100 dark:bg-gray-800 min-h-screen">
       {/* Header with Dark Mode Toggle */}
       <div className="flex justify-between items-center mb-6">
-      <h1 className="text-4xl font-extrabold text-gray-900 dark:text-gray-100 drop-shadow-lg">🌟 Student Management 🌟</h1>
-      <button
+        <h1 className="text-4xl font-extrabold text-gray-900 dark:text-gray-100 drop-shadow-lg">
+          🌟 Student Management 🌟
+        </h1>
+        <button
           className="px-5 py-2 bg-white text-gray-800 dark:bg-gray-700 dark:text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition-all duration-200"
           onClick={() => setDarkMode(!darkMode)}
         >
           {darkMode ? "Switch to Light Mode 🌞" : "Switch to Dark Mode 🌙"}
         </button>
-
       </div>
 
       {/* Search and Sort Controls */}
@@ -117,18 +135,32 @@ export const StudentManagement: React.FC = () => {
       </div>
 
       {/* Loading Spinner or Content */}
-      {loading ? (
+      {loading && (
         <div className="flex justify-center items-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      ) : filteredStudents.length === 0 ? (
+      )}
+
+      {filteredStudents.length === 0 && !loading ? (
         <p className="text-center text-gray-500">No students found.</p>
       ) : isMobileView ? (
-        <div>
-          {filteredStudents.map((student) => (
-            <StudentCard key={student.rollNumber} student={student} />
-          ))}
-        </div>
+        <InfiniteScroll
+          dataLength={students.length} // Length of loaded data
+          next={fetchMoreData} // Function to fetch more data
+          hasMore={hasMore} // Whether more data can be fetched
+          loader={<h4 className="text-center">Loading more...</h4>} // Loader
+          endMessage={
+            <p className="text-center text-gray-500 mt-4">
+              🎉 You have seen all students!
+            </p>
+          }
+        >
+          <div className="grid gap-4">
+            {filteredStudents.map((student) => (
+              <StudentCard key={student.rollNumber} student={student} />
+            ))}
+          </div>
+        </InfiniteScroll>
       ) : (
         <StudentTable
           students={filteredStudents}
@@ -138,7 +170,7 @@ export const StudentManagement: React.FC = () => {
         />
       )}
 
-      {/* Pagination */}
+      {/* Pagination for Desktop View */}
       {!isMobileView && (
         <Pagination
           currentPage={currentPage}
