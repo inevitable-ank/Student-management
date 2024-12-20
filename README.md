@@ -162,6 +162,24 @@ export interface Student {
 
 ---
 
+---
+
+## Screenshots
+
+### 1. Desktop View - Table Format
+![Desktop Table View](./src/Screenshots/Home.png)
+
+### 2. Mobile View - Card Format
+![Mobile Card View](./src/Screenshots/Mobile%20View.png)
+
+### 3. Dark Mode
+![Dark Mode](./src/Screenshots/Dark%20View.png)
+
+### 4. Infinite Scrolling
+![Infinite Scrolling](./src/Screenshots/InfiniteScroll.png)
+
+---
+
 ## Sample JSON (`students.json`)
 
 ```json
