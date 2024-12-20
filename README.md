@@ -180,6 +180,9 @@ export interface Student {
 
 ---
 
+## Demo
+Check out the live demo [here](https://studentsmanagement.netlify.app/)
+
 ## Sample JSON (`students.json`)
 
 ```json
