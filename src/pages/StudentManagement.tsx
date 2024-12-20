@@ -7,16 +7,17 @@ import { Student } from "../types/types";
 import InfiniteScroll from "react-infinite-scroll-component";
 
 export const StudentManagement: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([]);
+  const [baseStudents, setBaseStudents] = useState<Student[]>([]); 
+  const [students, setStudents] = useState<Student[]>([]); 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isMobileView, setIsMobileView] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>(""); 
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortField, setSortField] = useState<keyof Student>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [loading, setLoading] = useState<boolean>(false);
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [totalStudents, setTotalStudents] = useState<number>(0);
-  const [hasMore, setHasMore] = useState<boolean>(true); // Tracks if more data is available
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   const pageSize = 10;
 
@@ -35,25 +36,22 @@ export const StudentManagement: React.FC = () => {
       setLoading(true);
       const { data, total } = await getStudents(pageSize, currentPage);
       if (currentPage === 1) {
-        setStudents(data); // Overwrite on first page
+        setBaseStudents(data); 
       } else {
-        setStudents((prev) => [...prev, ...data]); // Append on subsequent pages
+        setBaseStudents((prev) => [...prev, ...data]); 
       }
-      setTotalStudents(total); // Update total number of students
-      if (students.length + data.length >= total) {
-        setHasMore(false); // No more data available
-      }
+      setTotalStudents(total);
+      setHasMore(currentPage * pageSize < total);
       setLoading(false);
     };
 
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   // Infinite scroll load more handler
-  const fetchMoreData = () => {
+  const fetchMoreData = async () => {
     if (hasMore) {
-      setCurrentPage((prevPage) => prevPage + 1); // Increment page number to load next set of data
+      setCurrentPage((prevPage) => prevPage + 1); // Increment page number
     }
   };
 
@@ -71,6 +69,7 @@ export const StudentManagement: React.FC = () => {
   // Handle search input changes
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value.toLowerCase());
+    setCurrentPage(1); // Reset to the first page when searching
   };
 
   // Handle sorting
@@ -78,20 +77,26 @@ export const StudentManagement: React.FC = () => {
     const order = sortField === field && sortOrder === "asc" ? "desc" : "asc";
     setSortField(field);
     setSortOrder(order);
+
+    // Reset pagination and apply sorting
+    const sortedData = [...baseStudents].sort((a, b) => {
+      if (a[field] < b[field]) return order === "asc" ? -1 : 1;
+      if (a[field] > b[field]) return order === "asc" ? 1 : -1;
+      return 0;
+    });
+    setStudents(sortedData);
+    // setCurrentPage(1); // Reset to the first page after sorting
   };
 
-  // Filter and sort students dynamically
-  const filteredStudents = students
-    .filter(
+  // Filter students dynamically based on search query
+  useEffect(() => {
+    const filtered = baseStudents.filter(
       (student) =>
         student.name.toLowerCase().includes(searchQuery) ||
         student.rollNumber.toLowerCase().includes(searchQuery)
-    )
-    .sort((a, b) => {
-      if (a[sortField] < b[sortField]) return sortOrder === "asc" ? -1 : 1;
-      if (a[sortField] > b[sortField]) return sortOrder === "asc" ? 1 : -1;
-      return 0;
-    });
+    );
+    setStudents(filtered);
+  }, [baseStudents, searchQuery]);
 
   const totalPages = Math.ceil(totalStudents / pageSize);
 
@@ -99,7 +104,7 @@ export const StudentManagement: React.FC = () => {
     <div className="p-6 bg-gray-100 dark:bg-gray-800 min-h-screen">
       {/* Header with Dark Mode Toggle */}
       <div className="flex flex-col sm:flex-row sm:justify-between items-center mb-6 gap-4">
-      <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 drop-shadow-lg text-center sm:text-left">
+        <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 drop-shadow-lg text-center sm:text-left">
           🌟 Student Management 🌟
         </h1>
         <button
@@ -141,14 +146,14 @@ export const StudentManagement: React.FC = () => {
         </div>
       )}
 
-      {filteredStudents.length === 0 && !loading ? (
+      {students.length === 0 && !loading ? (
         <p className="text-center text-gray-500">No students found.</p>
       ) : isMobileView ? (
         <InfiniteScroll
-          dataLength={students.length} // Length of loaded data
-          next={fetchMoreData} // Function to fetch more data
-          hasMore={hasMore} // Whether more data can be fetched
-          loader={<h4 className="text-center">Loading more...</h4>} // Loader
+          dataLength={students.length}
+          next={fetchMoreData}
+          hasMore={hasMore}
+          loader={<h4 className="text-center">Loading more...</h4>}
           endMessage={
             <p className="text-center text-gray-500 mt-4">
               🎉 You have seen all students!
@@ -156,21 +161,29 @@ export const StudentManagement: React.FC = () => {
           }
         >
           <div className="grid gap-4">
-            {filteredStudents.map((student) => (
-              <StudentCard key={student.rollNumber} student={student} />
+            {students.map((student, index) => (
+              <StudentCard
+                key={student.rollNumber}
+                student={student}
+                serialNo={(currentPage - 1) * pageSize + index + 1}
+              />
             ))}
           </div>
         </InfiniteScroll>
       ) : (
         <StudentTable
-          students={filteredStudents}
+          students={students.slice(
+            (currentPage - 1) * pageSize,
+            currentPage * pageSize
+          )}
+          currentPage={currentPage}
+          pageSize={pageSize}
           onSort={handleSort}
           sortField={sortField}
           sortOrder={sortOrder}
         />
       )}
 
-      {/* Pagination for Desktop View */}
       {!isMobileView && (
         <Pagination
           currentPage={currentPage}
@@ -181,3 +194,5 @@ export const StudentManagement: React.FC = () => {
     </div>
   );
 };
+
+
