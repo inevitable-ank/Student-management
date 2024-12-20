@@ -3,7 +3,8 @@
 This project is a simple **Student Management System** built using React, TypeScript, TailwindCSS, and other modern web technologies. The application supports functionalities like viewing students in table or card format, infinite scrolling, sorting, searching, and switching between light and dark modes.
 
 ---
-
+## LINK 
+https://studentsmanagement.netlify.app/
 ## Features
 
 1. **Responsive Design**: 
